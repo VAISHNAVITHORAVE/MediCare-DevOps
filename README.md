@@ -11,8 +11,6 @@ npm run build      # outputs static files to dist/
 npm run preview
 ```
 
-## Images
-Put photos in `public/images/` (see the README.txt there). Missing images show a placeholder.
 
 ## Nginx (static hosting, SPA routing)
 ```nginx
