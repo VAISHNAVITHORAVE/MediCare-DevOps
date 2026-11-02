@@ -1,0 +1,68 @@
+---
+- name: Deploy MediCare Hospital Appointment System
+  hosts: web
+  become: yes
+
+  tasks:
+    - name: Update apt package cache
+      apt:
+        update_cache: yes
+
+    - name: Install Nginx and Node.js
+      apt:
+        name:
+          - nginx
+          - nodejs
+          - npm
+        state: present
+
+    - name: Build MediCare React application
+      command: npm run build
+      args:
+        chdir: "{{ playbook_dir }}/.."
+        creates: "{{ playbook_dir }}/../dist/index.html"
+
+    - name: Create Nginx web root
+      file:
+        path: /var/www/medicare
+        state: directory
+        mode: '0755'
+
+    - name: Copy MediCare build files
+      copy:
+        src: "{{ playbook_dir }}/../dist/"
+        dest: /var/www/medicare/
+
+    - name: Configure Nginx
+      copy:
+        dest: /etc/nginx/sites-available/medicare
+        content: |
+          server {
+              listen 80;
+              server_name localhost;
+              root /var/www/medicare;
+              index index.html;
+              location / {
+                  try_files $uri $uri/ /index.html;
+              }
+          }
+
+    - name: Enable MediCare site
+      file:
+        src: /etc/nginx/sites-available/medicare
+        dest: /etc/nginx/sites-enabled/medicare
+        state: link
+
+    - name: Remove default Nginx site
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: Validate Nginx configuration
+      command: nginx -t
+      changed_when: false
+
+    - name: Start Nginx
+      service:
+        name: nginx
+        state: started
